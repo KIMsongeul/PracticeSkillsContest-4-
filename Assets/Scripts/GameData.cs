@@ -45,7 +45,7 @@ public class GameData : MonoBehaviour
     /// <summary>
     /// 가방 데이터 기록
     /// </summary>
-    //public List<Item> bagData = new List<Item>();
+    public List<Item> bagData = new List<Item>();
     /// <summary>
     /// 보물 개수
     /// </summary>

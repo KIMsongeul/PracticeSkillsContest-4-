@@ -5,6 +5,7 @@ using Unity.VisualScripting;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class PlayerControl : MonoBehaviour
 {
@@ -24,7 +25,6 @@ public class PlayerControl : MonoBehaviour
     public bool isRecog = false;
 
     public GameObject ChestArrow;
-    public GameObject tempChest;
 
     public float rotSpeed = 2.0f;
 
@@ -46,8 +46,8 @@ public class PlayerControl : MonoBehaviour
 
     public int hp = 10;
 
-    public GameManger gameManger;
-    //public inventoryControl inventoryControl;
+    public GameManger gameManager;
+    public InventoryControl inventoryControl;
     private void Update()
     {
         if (!GameData.Instance.isMouse)
@@ -55,22 +55,67 @@ public class PlayerControl : MonoBehaviour
             Move();
             LookAround();
             Attack();
+            SetO2();
+            if (isSpeedUp)
+            {
+                if (speedTiming > speedTimer)
+                {
+                    isSpeedUp = false;
+                    moveSpeed = originalSpeed;
+                    speedTiming = 0;
+
+                }
+                else
+                {
+                    speedTiming += Time.deltaTime;
+                }
+            }
+            if (isDbSpeedUp)
+            {
+                if (dbSpeedTiming > dbSpeedTimer)
+                {
+                    isDbSpeedUp = false;
+                    moveSpeed = originalSpeed;
+                    dbSpeedTiming = 0;
+
+                }
+                else
+                {
+                    dbSpeedTiming += Time.deltaTime;
+                }
+            }
+            if (isRecog)
+            {
+                if (recogTiming > recogTimer)
+                {
+                    isRecog = false;
+                    recogTiming = 0;
+
+                }
+                else
+                {
+                    recogTiming += Time.deltaTime;
+                }
+            }
+            GameData.Instance.gameTime += Time.deltaTime;
+            gameManager.totalTime.text = GameData.Instance.gameTime.ToString("#");
         }
     }
     private void Start()
     {
         SetPlayer();
+        SetHp();
     }
 
     public void SetPlayer()
     {
         originalSpeed = moveSpeed;
-        gameManger = GameObject.Find("GameManager").GetComponent<GameManger>();
+        gameManager = GameObject.Find("GameManager").GetComponent<GameManger>();
         this.transform.position = GameData.StagePos[GameData.Instance.stageNum];
         trCamera = GameObject.Find("Main Camera").transform;
         ChestArrow = Resources.Load<GameObject>("Prefabs/ChestArrow");
         characterController = this.AddComponent<CharacterController>();
-        //inventoryControl = this.AddComponent<InventoryControl>();
+        inventoryControl = this.AddComponent<InventoryControl>();
         CreateKnife();
     }
     void CreateKnife()
@@ -106,6 +151,70 @@ public class PlayerControl : MonoBehaviour
             yield return null;
         }
     }
+    public void UseItem(int itemNum)
+    {
+        Debug.Log("ItemNum" + itemNum + "사용");
+        switch (itemNum)
+        {
+            case 0:
+                {
+                    Vector3 pos = FindChest().position;
+                    
+                    Instantiate(ChestArrow,pos,ChestArrow.transform.rotation);
+                }
+                break;
+            case 1:
+                {
+                    hp = GameData.MaxHp;
+                    gameManager.hpBar.value = (float)hp / (float)GameData.MaxHp;
+                }
+                break;
+            case 2:
+                {
+                    O2 = GameData.MaxO2[GameData.Instance.bagO2];
+                    gameManager.O2Bar.value = (float)O2 / (float)GameData.MaxO2[GameData.Instance.bagO2];
+                }
+                break;
+            case 3:
+                {
+                    isRecog = true;
+                    recogTiming = 0;
+                }
+                break;
+            case 4:
+                {
+                    isDbSpeedUp = true;
+                    moveSpeed = originalSpeed * 1.4f;
+                    dbSpeedTiming = 0;
+                }
+                break;
+            case 5:
+                {
+                    isSpeedUp = true;
+                    moveSpeed = originalSpeed * 1.2f;
+                    speedTiming = 0;
+                }
+                break;
+
+        }
+    }
+    public void SetDamage(int damage)
+    {
+        if (!isRecog)
+        {
+            hp -= damage;
+            Debug.Log("체력 감소");
+            if (hp < 0)
+            {
+                gameManager.hpBar.value = 0;
+                gameManager.SetGameClear(false);
+            }
+            else
+            {
+                gameManager.hpBar.value = (float)hp / (float)GameData.MaxHp;
+            }
+        }
+    }
     void Move()
     {
         float h = Input.GetAxis("Horizontal");
@@ -113,6 +222,7 @@ public class PlayerControl : MonoBehaviour
         Vector3 move = transform.forward * v + transform.right * h;
         characterController.Move(move * moveSpeed * Time.deltaTime);
         trCamera.position = transform.position + new Vector3(0, 0.5f, 0);
+        
     }
     void LookAround()
     {
@@ -145,15 +255,90 @@ public class PlayerControl : MonoBehaviour
             Debug.Log("감지 오브젝트 : " + hit.collider.gameObject.name);
             if (hit.collider.gameObject.CompareTag("Chest"))
             {
-                int num = gameManger.mapControl.chests.FindIndex(a => a == hit.collider.gameObject);
+                int num = gameManager.mapControl.chests.FindIndex(a => a == hit.collider.gameObject);
                 if (num > -1)
                 {
                     GameData.Instance.chestData[num] = false;
                     GameData.Instance.cost += GameData.chestCost[GameData.Instance.stageNum];
                     hit.collider.gameObject.SetActive(false);
                 }
-                //gameManger.SetChest(GameData.Instance.chestData.FindAll(a => a).Count);
+                gameManager.SetChest(GameData.Instance.chestData.FindAll(a => a).Count);
+            }
+            else if (hit.collider.gameObject.CompareTag("Obstacle"))
+            {
+                hit.collider.gameObject.SetActive(false);
+            }
+            else if (hit.collider.gameObject.CompareTag("Item"))
+            {
+                if (inventoryControl.GetInventoryEmpty(hit.collider.GetComponent<Item>()))
+                {
+                    hit.collider.gameObject.SetActive(false);
+                }
+                
+            }
+            else if (hit.collider.gameObject.CompareTag("Start"))
+            {
+                SceneManager.LoadScene("Robby");
+                gameManager.GameModeChange();
+            }
+            else if (hit.collider.gameObject.CompareTag("End"))
+            {
+                if(GameData.Instance.chestData.FindAll(a => a).Count <= 0)
+                {
+                    gameManager.GameModeChange();
+                    gameManager.gameCard.gameObject.SetActive(true);
+                }
+                else
+                {
+                    gameManager.delayText.SetText("보물 다 찾아라");
+                }
             }
         }
+    }
+    public Transform FindChest()
+    {
+        float distance = 100000;
+        Transform returnTr = null;
+        for (int i = 0; i < gameManager.mapControl.chests.Count; i++)
+        {
+            if (gameManager.mapControl.chests[i].activeInHierarchy)
+            {
+                float tempDistacnde = Vector3.Distance(this.transform.position, gameManager.mapControl.chests[i].transform.position);
+                if (distance > tempDistacnde)
+                {
+                    distance = tempDistacnde;
+                    returnTr = gameManager.mapControl.chests[i].transform;
+                }
+            }
+        }
+        return returnTr;
+    }
+    public void SetO2()
+    {
+        if (isO2)
+        {
+            if (O2Timer > O2Timing)
+            {
+                O2Timing = 0;
+                O2 += 1;
+                if (O2 < 0)
+                {
+                    gameManager.O2Bar.value = 0;
+                    gameManager.SetGameClear(false);
+                }
+                else
+                {
+                    gameManager.O2Bar.value = (float)O2 / (float)GameData.MaxO2[GameData.Instance.bagO2];
+                }
+            }
+            else
+            {
+                O2Timing += Time.deltaTime;
+            }
+        }
+    }
+    public void SetHp()
+    {
+        gameManager.hpBar.value = GameData.MaxHp;
     }
 }
