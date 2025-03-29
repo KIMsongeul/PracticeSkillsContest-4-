@@ -1,0 +1,17 @@
+fileFormatVersion: 2
+guid: 8a28fefcde0bd9d4da4aea1d092581c6
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - sandTexture: {instanceID: 0}
+  - grassTexture: {instanceID: 0}
+  - terrain: {instanceID: 0}
+  - prefabChest: {instanceID: 0}
+  - gameManager: {instanceID: 0}
+  - prefabDoor: {instanceID: 0}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
