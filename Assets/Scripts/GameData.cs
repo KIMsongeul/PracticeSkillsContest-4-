@@ -65,7 +65,7 @@ public class GameData : MonoBehaviour
     /// <summary>
     /// 마우스 상태(true:일반, false:잠금)
     /// </summary>
-    public bool isMouse = true;
+    public bool isMouse = false;
     /// <summary>
     /// 산소통 넘버
     /// </summary>

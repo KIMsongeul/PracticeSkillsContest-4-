@@ -35,6 +35,7 @@ public class MapControl : MonoBehaviour
     private void Start()
     {
         CreateMap();
+        Cursor.lockState = CursorLockMode.Locked;
     }
 
     public void CreateMap()
@@ -124,9 +125,9 @@ public class MapControl : MonoBehaviour
                     bottomBlock.transform.parent = map.transform;
 
                     GameObject block = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                    bottomBlock.GetComponent<Renderer>().material.mainTexture = sandTexture;
-                    bottomBlock.transform.position = new Vector3(j * tileSize, 0f, i * tileSize);
-                    bottomBlock.transform.parent = map.transform;
+                    block.GetComponent<Renderer>().material.mainTexture = sandTexture;
+                    block.transform.position = new Vector3(j * tileSize, 0f, i * tileSize);
+                    block.transform.parent = map.transform;
                     block.tag = "Obstacle";
 
                 }
